@@ -16,6 +16,11 @@
 			path = BroadAppsTestApp;
 			sourceTree = "<group>";
 		};
+		841A512B2E99D47B0024B85A /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -34,6 +39,7 @@
 			children = (
 				841A50BE2E993A6E0024B85A /* BroadAppsTestApp */,
 				841A50BD2E993A6E0024B85A /* Products */,
+				841A512B2E99D47B0024B85A /* Shared */,
 			);
 			sourceTree = "<group>";
 		};
@@ -62,6 +68,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				841A50BE2E993A6E0024B85A /* BroadAppsTestApp */,
+				841A512B2E99D47B0024B85A /* Shared */,
 			);
 			name = BroadAppsTestApp;
 			packageProductDependencies = (

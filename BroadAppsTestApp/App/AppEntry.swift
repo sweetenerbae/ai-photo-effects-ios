@@ -6,8 +6,11 @@
 //
 import SwiftUI
 
+private enum AppState { case launching, onboarding, home }
+
 struct AppEntry: View {
     @StateObject private var storage = AppStorageOnboarding()
+    @State private var state: AppState = .launching
 
     private let slides: [OnboardingSlide] = [
         .init(title: "Welcome to App",
@@ -23,21 +26,28 @@ struct AppEntry: View {
 
     var body: some View {
         Group {
-            if storage.hasCompleted {
-                RootContentView()
-            } else {
+            switch state {
+            case .launching:
+                SplashView()          
+                    .task { await bootstrap() }
+
+            case .onboarding:
                 OnboardingView(
                     vm: OnboardingViewModel(slides: slides, storage: storage)
                 )
+                    .onChange(of: storage.hasCompleted) { if $0 { state = .home } }
+
+            case .home:
+                MainTabView()
             }
+        }
+        .animation(.easeInOut(duration: 0.22), value: state)
+    }
+
+    private func bootstrap() async {
+        await MainActor.run {
+            state = storage.hasCompleted ? .home : .onboarding //todo
         }
     }
 }
 
-struct RootContentView: View {
-    var body: some View {
-        Text("Main app here")
-            .font(.title)
-            .padding()
-    }
-}

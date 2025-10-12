@@ -16,12 +16,13 @@ struct BottomCard: View {
         VStack(alignment: .center, spacing: 16) {
             Text(title)
                 .font(.system(size: 28, weight: .bold))
-                .foregroundStyle(.black)
+                .foregroundStyle(.labelBlack)
                 .multilineTextAlignment(.center)
 
             Text(subtitle)
-                .font(.system(size: 15))
-                .foregroundStyle(.black)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.labelBlack)
+                .opacity(0.7)
                 .multilineTextAlignment(.center)
 
             Button(buttonTitle, action: action)
