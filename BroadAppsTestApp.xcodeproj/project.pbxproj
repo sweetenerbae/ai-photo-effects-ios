@@ -10,9 +10,22 @@
 		841A50BC2E993A6E0024B85A /* BroadAppsTestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BroadAppsTestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		84AB1B182E9E6E1C00E179AA /* Exceptions for "BroadAppsTestApp" folder in "BroadAppsTestApp" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 841A50BB2E993A6E0024B85A /* BroadAppsTestApp */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		841A50BE2E993A6E0024B85A /* BroadAppsTestApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				84AB1B182E9E6E1C00E179AA /* Exceptions for "BroadAppsTestApp" folder in "BroadAppsTestApp" target */,
+			);
 			path = BroadAppsTestApp;
 			sourceTree = "<group>";
 		};
@@ -261,6 +274,7 @@
 				DEVELOPMENT_TEAM = KD8FYSFGJU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BroadAppsTestApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -298,6 +312,7 @@
 				DEVELOPMENT_TEAM = KD8FYSFGJU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BroadAppsTestApp/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

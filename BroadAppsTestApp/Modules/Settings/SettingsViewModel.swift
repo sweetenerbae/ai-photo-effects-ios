@@ -23,13 +23,17 @@ final class SettingsViewModel: ObservableObject {
     enum Doc: Identifiable { case terms, privacy
         var id: String { "\(self)" }
         var title: String { self == .terms ? "Terms of Use" : "Privacy Policy" }
-        var url: URL { // твои ссылки
+
+        var url: URL {
             switch self {
-            case .terms:   return URL(string: "https://example.com/terms")!
-            case .privacy: return URL(string: "https://example.com/privacy")!
+            case .terms:
+                return Bundle.main.url(forResource: "terms", withExtension: "html")!
+            case .privacy:
+                return Bundle.main.url(forResource: "privacy", withExtension: "html")!
             }
         }
-        var localFallback: String { // имена локальных HTML в бандле
+
+        var localFallback: String {
             switch self {
             case .terms: "terms"
             case .privacy: "privacy"

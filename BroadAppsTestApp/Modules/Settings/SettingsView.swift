@@ -12,100 +12,116 @@ struct SettingsView: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView(.vertical, showsIndicators: false) {
-                VStack(spacing: 16) {
+            GeometryReader { geo in
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 12) {
 
-                    // MARK: Profile / Avatar
-                    AvatarHeader(
-                        image: vm.avatarImage,
-                        name: vm.avatarName,
-                        onTap: { vm.isAvatarSheetPresented = true }
-                    )
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
+                        // MARK: Profile / Avatar
+                        AvatarHeader(
+                            image: vm.avatarImage,
+                            name: vm.avatarName,
+                            onTap: { vm.isAvatarSheetPresented = true }
+                        )
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
 
-                    // MARK: Subscription
-                    GroupBox {
-                        VStack(spacing: 0) {
-                            SettingRow(
-                                icon: "diamond.fill",
-                                title: "Renew your subscription",
-                                trailing: .chevron
-                            ) { vm.onRestoreTapped() }
+                        // MARK: Subscription
+                        GroupBox {
+                            VStack(spacing: 0) {
+                                SettingRow(
+                                    icon: "diamond.fill",
+                                    title: "Renew your subscription",
+                                    trailing: .chevron
+                                ) { vm.onRestoreTapped() }
 
-                            Divider().padding(.leading, 48)
+                                Divider()
+                                    .padding(.leading, 48)
+                                    .padding(.vertical, 6)
 
-                            SettingRow(
-                                icon: "arrow.clockwise",
-                                title: "Renew your subscription",
-                                trailing: .chevron
-                            ) { vm.onRestoreTapped() }
+                                SettingRow(
+                                    icon: "arrow.clockwise",
+                                    title: "Renew your subscription",
+                                    trailing: .chevron
+                                ) { vm.onRestoreTapped() }
+                            }
+                            .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            .background(Color.grayButton)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
-                    }
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .padding(.horizontal, 16)
+                        .groupBoxStyle(PlainGroupBoxStyle())
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 2)
 
-                    // MARK: Notifications
-                    GroupBox {
-                        HStack(spacing: 12) {
-                            IconTile(name: "bell.fill")
-                            Text("Notifications")
-                                .font(.system(size: 17, weight: .semibold))
-                            Spacer()
-                            Toggle("", isOn: $vm.notificationsEnabled)
-                                .labelsHidden()
-                                .onChange(of: vm.notificationsEnabled) { on in
-                                    vm.handleNotificationsToggle(on)
-                                }
+                        // MARK: Notifications
+                        GroupBox {
+                            HStack(spacing: 12) {
+                                IconTile(name: "bell.fill")
+                                Text("Notifications")
+                                    .appFont(.body)
+                                Spacer()
+                                Toggle("", isOn: $vm.notificationsEnabled)
+                                    .labelsHidden()
+                                    .onChange(of: vm.notificationsEnabled) {_, on in
+                                        vm.handleNotificationsToggle(on)
+                                    }
+                            }
+                            .frame(minHeight: 44)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .background(Color.grayButton)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                         }
+                        .groupBoxStyle(PlainGroupBoxStyle())
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 2)
+
+                        // MARK: Legal
+                        GroupBox {
+                            VStack(spacing: 0) {
+                                SettingRow(
+                                    icon: "doc.text.fill",
+                                    title: "Terms of Use",
+                                    trailing: .chevron
+                                ) { vm.openDoc(.terms) }
+
+                                Divider()
+                                    .padding(.leading, 48)
+                                    .padding(.vertical, 6)
+
+                                SettingRow(
+                                    icon: "shield.fill",
+                                    title: "Privacy Policy",
+                                    trailing: .chevron
+                                ) { vm.openDoc(.privacy) }
+                            }
+                            .padding(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            .background(Color.grayButton)
+                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        }
+                        .groupBoxStyle(PlainGroupBoxStyle())
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 2)
+
+                        // Push footer to the bottom if content is short
+                        Spacer(minLength: 0)
+
+                        // MARK: App Info
+                        VStack(alignment: .leading, spacing: 8) {
+                            Divider()
+                                .padding(.horizontal, 16)
+                            InfoRow(label: "Account ID", value: vm.accountID)
+                            InfoRow(label: "Version", value: vm.appVersion)
+                        }
+                        .padding(.horizontal, 16)
                         .padding(.vertical, 12)
-                        .padding(.horizontal, 12)
                     }
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .padding(.horizontal, 16)
-
-                    // MARK: Legal
-                    GroupBox {
-                        VStack(spacing: 0) {
-                            SettingRow(
-                                icon: "doc.text.fill",
-                                title: "Terms of Use",
-                                trailing: .chevron
-                            ) { vm.openDoc(.terms) }
-
-                            Divider().padding(.leading, 48)
-
-                            SettingRow(
-                                icon: "shield.fill",
-                                title: "Privacy Policy",
-                                trailing: .chevron
-                            ) { vm.openDoc(.privacy) }
-                        }
-                    }
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .padding(.horizontal, 16)
-
-                    // MARK: App Info
-                    VStack(alignment: .leading, spacing: 8) {
-                        InfoRow(label: "Account ID", value: vm.accountID)
-                        InfoRow(label: "Version", value: vm.appVersion)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 24)
+                    .frame(minHeight: geo.size.height, alignment: .top)
                 }
             }
             .navigationTitle("Settings")
-            .sheet(isPresented: $vm.isAvatarSheetPresented) {
-                AvatarActionsSheet(
-                    name: vm.avatarName,
-                    onRename: vm.renameAvatar,
-                    onChangePhoto: vm.changeAvatarPhoto,
-                    onDelete: vm.deleteAvatar
-                )
-                .presentationDetents([.medium])
+            .fullScreenCover(isPresented: $vm.isAvatarSheetPresented) {
+                AvatarCreationFlowView()
+                    .ignoresSafeArea()
             }
             .sheet(item: $vm.presentingDoc) { doc in
                 WebDocumentView(doc: doc)
@@ -140,7 +156,7 @@ private struct AvatarHeader: View {
                     }
                 }
                 .frame(width: 84, height: 84)
-                .background(Color(.systemGray6))
+                .background(Color.grayButton)
                 .clipShape(Circle())
                 .overlay(Circle().stroke(Color(.systemGray4), lineWidth: 1))
             }
@@ -169,7 +185,7 @@ private struct SettingRow: View {
             HStack(spacing: 12) {
                 IconTile(name: icon)
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .appFont(.body)
                     .foregroundStyle(.primary)
                 Spacer()
                 if trailing == .chevron {
@@ -177,8 +193,7 @@ private struct SettingRow: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
         }
         .buttonStyle(.plain)
     }
@@ -188,12 +203,10 @@ private struct IconTile: View {
     let name: String
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(.systemGray5))
             Image(systemName: name)
                 .foregroundStyle(.black)
         }
-        .frame(width: 28, height: 28)
+        .frame(width: 20, height: 20)
     }
 }
 
@@ -203,12 +216,21 @@ private struct InfoRow: View {
     var body: some View {
         HStack {
             Text(label)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.gray)
+                .font(.system(size: 12, weight: .medium))
             Spacer()
             Text(value)
-                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Color.gray)
+                .font(.system(size: 12, weight: .medium))
         }
         .padding(.vertical, 6)
+    }
+}
+
+// Lightweight GroupBox style (no extra chrome)
+private struct PlainGroupBoxStyle: GroupBoxStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.content
     }
 }
 

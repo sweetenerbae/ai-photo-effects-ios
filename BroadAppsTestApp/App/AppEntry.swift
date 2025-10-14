@@ -10,6 +10,7 @@ private enum AppState { case launching, onboarding, home }
 
 struct AppEntry: View {
     @StateObject private var storage = AppStorageOnboarding()
+    @StateObject private var tabRouter = TabRouter()
     @State private var state: AppState = .launching
 
     private let slides: [OnboardingSlide] = [
@@ -35,10 +36,11 @@ struct AppEntry: View {
                 OnboardingView(
                     vm: OnboardingViewModel(slides: slides, storage: storage)
                 )
-                    .onChange(of: storage.hasCompleted) { if $0 { state = .home } }
+                    .onChange(of: storage.hasCompleted) { _, newValue in if newValue { state = .home } }
 
             case .home:
                 MainTabView()
+                    .environmentObject(tabRouter)
             }
         }
         .animation(.easeInOut(duration: 0.22), value: state)
@@ -50,4 +52,3 @@ struct AppEntry: View {
         }
     }
 }
-

@@ -26,18 +26,21 @@ private struct WebView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let conf = WKWebViewConfiguration()
-        let view = WKWebView(frame: .zero, configuration: conf)
-        view.allowsBackForwardNavigationGestures = true
-        return view
+        let web = WKWebView(frame: .zero, configuration: conf)
+        web.allowsBackForwardNavigationGestures = true
+        web.navigationDelegate = context.coordinator
+        return web
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {
-        // кэш по максимуму
-        let request = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 20)
-        webView.load(request)
-
-        // офлайн фолбэк, если ошибка сети
-        webView.navigationDelegate = context.coordinator
+        if url.isFileURL {
+            webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+        } else {
+            let request = URLRequest(url: url,
+                                     cachePolicy: .returnCacheDataElseLoad,
+                                     timeoutInterval: 20)
+            webView.load(request)
+        }
     }
 
     func makeCoordinator() -> Coordinator { Coordinator(localFallbackFilename: localFallbackFilename) }
@@ -47,12 +50,13 @@ private struct WebView: UIViewRepresentable {
         init(localFallbackFilename: String) { self.localFallbackFilename = localFallbackFilename }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-            loadLocal(webView)
+            loadLocal(into: webView)
         }
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-            loadLocal(webView)
+            loadLocal(into: webView)
         }
-        private func loadLocal(_ webView: WKWebView) {
+
+        private func loadLocal(into webView: WKWebView) {
             if let url = Bundle.main.url(forResource: localFallbackFilename, withExtension: "html") {
                 webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
             }

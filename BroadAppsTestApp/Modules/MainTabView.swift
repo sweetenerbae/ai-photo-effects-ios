@@ -6,8 +6,12 @@
 //
 
 import SwiftUI
+import Combine
+import UIKit
 
 struct MainTabView: View {
+    @EnvironmentObject var tabRouter: TabRouter
+    
     init() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
@@ -39,31 +43,39 @@ struct MainTabView: View {
     }
 
     var body: some View {
-        TabView {
+        TabView(selection: $tabRouter.selected) {
             EffectsRootView()
                 .tabItem {
                     Image("state=effects").renderingMode(.template)
                     Text("Effects")
                 }
+                .tag(TabRouter.Tab.effects)
 
             AiPhotoView()
                 .tabItem {
                     Image("state=images").renderingMode(.template)
                     Text("Ai photo")
                 }
+                .tag(TabRouter.Tab.ai)
 
             HistoryView()
                 .tabItem {
                     Image("state=history").renderingMode(.template)
                     Text("History")
                 }
+                .tag(TabRouter.Tab.history)
 
             SettingsView()
                 .tabItem {
                     Image("state=settings").renderingMode(.template)
                     Text("Settings")
                 }
+                .tag(TabRouter.Tab.settings)
         }
-        .tint(Color("PrimaryOrange")) 
+        .onChange(of: tabRouter.selected) {
+            UISelectionFeedbackGenerator().selectionChanged()
+        }
+        .environmentObject(tabRouter)
+        .tint(Color("PrimaryOrange"))
     }
 }

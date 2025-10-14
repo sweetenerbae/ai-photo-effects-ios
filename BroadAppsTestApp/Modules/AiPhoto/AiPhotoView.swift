@@ -7,6 +7,8 @@
 
 import SwiftUI
 import PhotosUI
+import Combine
+import UIKit
 
 struct AiPhotoView: View {
     @StateObject private var vm = AiPhotoViewModel(
@@ -16,27 +18,37 @@ struct AiPhotoView: View {
 
     @FocusState private var promptFocused: Bool
     @State private var addAvatarPickerItem: PhotosPickerItem?
+    @State private var showCreateAvatar = false
+    @State private var showAvatarAlert = false
+    @EnvironmentObject var tabRouter: TabRouter
+    @StateObject private var keyboard = KeyboardObserver()
 
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(.systemBackground).ignoresSafeArea()
+                Color.white.ignoresSafeArea()
 
-                VStack(spacing: 16) {
-
+                VStack(spacing: 8) {
+                    TopBar(title: "Image generation") {
+                        CircleButton(system: "chevron.left", action: { tabRouter.selected = .effects }, style: .gray)
+                    } trailing: {
+                        Color.clear
+                    }
+                    .padding(.top, 12)
+                    .background(Color.white.ignoresSafeArea(edges: .top))
+                    
                     Group {
                         switch vm.state {
                         case .idle:
-                            VStack(spacing: 8) {
-                                Image(systemName: "photo.on.rectangle.angled")
-                                    .font(.system(size: 48, weight: .regular))
-                                    .foregroundStyle(.secondary)
+                            HStack(spacing: 8) {
+                                Image("state=images")
+                                    .font(.system(size: 32, weight: .regular))
+                                    .foregroundStyle(.gray2)
                                 Text("Image")
-                                    .foregroundStyle(.secondary)
+                                    .appFont(.title)
+                                    .foregroundStyle(.gray2)
                             }
                             .frame(maxWidth: .infinity, minHeight: 260)
-                            .background(Color(.systemGray6))
-                            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
                         case .loading:
                             VStack(spacing: 12) {
@@ -47,7 +59,7 @@ struct AiPhotoView: View {
                                     .foregroundStyle(.secondary)
                             }
                             .frame(maxWidth: .infinity, minHeight: 260)
-                            .background(Color(.systemGray6))
+                            .background(Color(.grayButton))
                             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
 
                         case .result(let image):
@@ -86,87 +98,140 @@ struct AiPhotoView: View {
                                 .contentShape(Rectangle())
                         }
                     }
-                    .onChange(of: vm.basePickerItem) { newItem in
+                    .onChange(of: vm.basePickerItem) { _, newItem in
                         vm.didPickBasePhoto(newItem)
                     }
 
-                    // Aspect ratio capsule (full-width)
-                    Button {
-                        vm.showAspectSheet = true
-                    } label: {
-                        FullWidthCapsule(title: vm.aspect.title)
-                    }
-                    .buttonStyle(.plain)
+                    VStack(spacing: 16) {
+                        HStack(spacing: 12) {
+                            Button { vm.activeSheet = .aspect } label: {
+                                CapsuleTile(title: vm.aspect.title)
+                            }
+                            .buttonStyle(.plain)
 
-                    // Avatar capsule (full-width)
-                    Button {
-                        vm.showAvatarSheet = true
-                    } label: {
-                        FullWidthCapsule(title: vm.selectedAvatar?.name ?? "Avatar")
-                    }
-                    .buttonStyle(.plain)
-
-                    // Prompt
-                    ZStack(alignment: .topLeading) {
-                        TextEditor(text: $vm.prompt)
-                            .focused($promptFocused)
-                            .frame(minHeight: 96)
-                            .padding(8)
-                            .background(Color(.systemGray6))
-                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-
-                        if vm.prompt.isEmpty {
-                            Text("Describe your dream photo — e.g., ‘A cat astronaut on Mars wearing a gold spacesuit’")
-                                .foregroundStyle(.secondary)
-                                .padding(.vertical, 12)
-                                .padding(.horizontal, 14)
-                                .allowsHitTesting(false)
+                            Button {
+                                if vm.avatars.isEmpty {
+                                    showAvatarAlert = true
+                                } else {
+                                    vm.activeSheet = .avatar
+                                }
+                            } label: {
+                                CapsuleTile(title: vm.selectedAvatar?.name ?? "Avatar")
+                            }
+                            .buttonStyle(.plain)
                         }
-                    }
+                        // Prompt
+                        ZStack(alignment: .topLeading) {
+                            TextEditor(text: $vm.prompt)
+                                .scrollContentBackground(.hidden)
+                                .foregroundStyle(.primary)
+                                .focused($promptFocused)
+                                .frame(minHeight: 96)
+                                .padding(8)
+                                .background(Color(.grayButton))
+                                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
 
-                    // Generate
-                    ActionButton(
-                        title: "Generate",
-                        style: .primary
-                    ) { vm.generate() }
-                    .opacity(vm.isPromptValid ? 1.0 : 0.5)
-                    .disabled(!vm.isPromptValid || vm.isLoading)
+                            if vm.prompt.isEmpty {
+                                Text("Describe your dream photo — e.g., ‘A cat astronaut on Mars wearing a gold spacesuit’")
+                                    .foregroundStyle(.secondary)
+                                    .padding(.vertical, 12)
+                                    .padding(.horizontal, 14)
+                                    .allowsHitTesting(false)
+                            }
+                        }
+
+                        // Generate
+                        ActionButton(
+                            title: "Generate",
+                            style: .primary
+                        ) { vm.generate() }
+                        .opacity(vm.isPromptValid ? 1.0 : 0.5)
+                        .disabled(!vm.isPromptValid || vm.isLoading)
+                    }
+                    .padding(.bottom, max(0, keyboard.height * 0.6))
+                    .animation(.easeOut(duration: 0.25), value: keyboard.height)
                 }
                 .padding(16)
             }
-            .navigationTitle("Image generation")
             .hideKeyboardOnTap()
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    CircleButton(system: "chevron.left", action: { vm.onBack?() }, style: .white)
-                        .opacity(vm.showBack ? 1 : 0)
-                        .disabled(!vm.showBack)
-                }
-            }
             .sheet(item: $vm.activeSheet) { sheet in
                 switch sheet {
                 case .aspect:
-                    BottomCurtain { AspectSheet(vm: vm) }
+                    BottomCurtain(title: "Aspect ratio") { AspectCurtainContent(vm: vm) }
                 case .avatar:
-                    BottomCurtain { AvatarSheet(vm: vm, addAvatarPickerItem: $addAvatarPickerItem) }
+                    BottomCurtain(title: "Avatar") { AvatarCurtainContent(vm: vm, addAvatarPickerItem: $addAvatarPickerItem) }
                 }
             }
+            // Открытие мастера создания аватара
+            .sheet(isPresented: $showCreateAvatar) {
+                AvatarCreationFlowView()
+            }
+
+            //Алерт, если аватар не создан
+            .alert("The avatar has not been created", isPresented: $showAvatarAlert) {
+                Button("Not now", role: .cancel) { }
+                Button("To create") {
+                    showCreateAvatar = true
+                }
+            } message: {
+                Text("Would you like to create it now?")
+            }
         }
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 
-private struct FullWidthCapsule: View {
+private struct CapsuleTile: View {
     let title: String
     var body: some View {
         HStack(spacing: 8) {
+            Image("")
             Text(title)
                 .font(.system(size: 15, weight: .semibold))
+                .multilineTextAlignment(.center)
             Spacer()
         }
-        .padding(.horizontal, 14)
+        .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
-        .background(Color(.systemGray6))
+        .background(Color(.grayButton))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+// MARK: - Keyboard Observer
+final class KeyboardObserver: ObservableObject {
+    @Published var height: CGFloat = 0
+    private var willChange: NSObjectProtocol?
+    private var willHide: NSObjectProtocol?
+
+    init() {
+        let nc = NotificationCenter.default
+        willChange = nc.addObserver(forName: UIResponder.keyboardWillChangeFrameNotification, object: nil, queue: .main) { [weak self] note in
+            self?.handle(note: note)
+        }
+        willHide = nc.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.height = 0
+        }
+    }
+
+    deinit {
+        let nc = NotificationCenter.default
+        if let willChange { nc.removeObserver(willChange) }
+        if let willHide { nc.removeObserver(willHide) }
+    }
+
+    private func handle(note: Notification) {
+        guard
+            let userInfo = note.userInfo,
+            let endFrame = (userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? NSValue)?.cgRectValue,
+            let window = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first?.keyWindow
+        else { return }
+
+        let kbFrameInView = window.convert(endFrame, to: nil)
+        let overlap = max(0, window.bounds.maxY - kbFrameInView.minY)
+        height = overlap - window.safeAreaInsets.bottom
     }
 }

@@ -29,7 +29,7 @@ struct RateUsView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
-                    Image("rate_heart") // твой ассет
+                    Image("rate_heart") 
                         .resizable()
                         .scaledToFit()
                         .frame(maxWidth: 240)
@@ -63,7 +63,7 @@ struct RateUsView: View {
             }
             .safeAreaPadding(.bottom)
         }
-        .background(Color(.systemBackground).ignoresSafeArea())
+        .background(Color.white.ignoresSafeArea())
     }
 }
 
@@ -94,7 +94,7 @@ private struct SecondaryButton: View {
                 .font(.system(size: 17, weight: .semibold))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(Color(.systemGray6))
+                .background(Color.grayButton)
                 .foregroundStyle(.primary)
                 .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                 .contentShape(Rectangle())

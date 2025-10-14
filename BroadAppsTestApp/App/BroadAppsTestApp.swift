@@ -11,6 +11,7 @@ struct BroadAppsTestApp: App {
     var body: some Scene {
         WindowGroup {
             AppEntry()
+                .preferredColorScheme(.light)
         }
     }
 }

@@ -16,7 +16,7 @@ struct CategoryGridView: View {
             LazyVGrid(columns: columns, spacing: 12) {
                 ForEach(0..<20, id: \.self) { i in
                     VStack(alignment: .leading, spacing: 6) {
-                        Image("trend_\((i % 3) + 1)")
+                        Image("effects\((i % 3) + 1)")
                             .resizable().scaledToFill()
                             .frame(height: 180)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))

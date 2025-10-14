@@ -24,13 +24,13 @@ struct AvatarActionsSheet: View {
             Button("Rename the avatar (\(name))", action: onRename)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .background(Color(.systemGray6))
+                .background(Color.grayButton)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
             Button("Change the avatar photo", action: onChangePhoto)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding()
-                .background(Color(.systemGray6))
+                .background(Color.grayButton)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
 
             Button(role: .destructive, action: onDelete) {
@@ -38,7 +38,7 @@ struct AvatarActionsSheet: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
-            .background(Color(.systemGray6))
+            .background(Color.grayButton)
             .clipShape(RoundedRectangle(cornerRadius: 12))
 
             Spacer(minLength: 8)

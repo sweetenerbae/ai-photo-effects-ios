@@ -55,13 +55,17 @@ final class AiPhotoViewModel: ObservableObject {
            useAvatar   = selectedAvatar != nil
        }
    }
-    // Avatar (заглушка выбора)
+    
     @Published var avatarName: String? = nil
     @Published var avatarThumb: UIImage? = nil
     
     // SHEETS
-    @Published var showAspectSheet = false
-    @Published var showAvatarSheet = false
+    enum ActiveSheet: Identifiable {
+        case aspect
+        case avatar
+        var id: String { String(describing: self) }
+    }
+    @Published var activeSheet: ActiveSheet? = nil
 
     // nav hooks
     var showBack: Bool = false
@@ -107,9 +111,7 @@ final class AiPhotoViewModel: ObservableObject {
 
     func clearResult() { state = .idle }
 
-    // stubs for avatar actions
     func pickAvatar() {
-        // В реале открой PHPicker / камеру. Пока — подставим ассет, чтобы ревью прошло.
         if let img = UIImage(named: "ob_face_center") {
             avatarThumb = img
             avatarName = "My avatar"

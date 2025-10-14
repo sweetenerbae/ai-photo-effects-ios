@@ -1,0 +1,76 @@
+//
+//  AvatarCreationViewModel.swift
+//  BroadAppsTestApp
+//
+//  Created by Diana Kuchaeva on 13.10.25.
+//
+
+import SwiftUI
+import PhotosUI
+import Combine
+
+final class AvatarCreationViewModel: ObservableObject {
+    enum Step { case gender, photos, progress, name, preview }
+    enum Gender: String { case woman, man }
+
+    @Published var step: Step = .gender
+    @Published var gender: Gender? = nil
+
+    @Published var pickedItems: [PhotosPickerItem] = []
+    @Published var images: [UIImage] = []
+    @Published var loading: Bool = false
+    @Published var error: String? = nil
+
+    @Published var avatarName: String = ""
+    @Published var generatedImage: UIImage? = nil
+
+    // Валидации
+    var canContinueGender: Bool { gender != nil }
+    var canContinuePhotos: Bool { images.count >= 10 && images.count <= 50 }
+    var canContinueName:   Bool { avatarName.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2 }
+
+    // MARK: actions
+    func goNext() {
+        switch step {
+        case .gender:  step = .photos
+        case .photos:  startGeneration()
+        case .progress: break
+        case .name:
+            if let img = generatedImage {
+                AvatarLibrary.shared.add(name: avatarName, image: img)
+                step = .preview
+            }
+        case .preview: break
+        }
+    }
+
+    func startGeneration() {
+        step = .progress
+        loading = true
+        // Заглушка генерации (для App Store)
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            // первую валидную фотку как результирующую
+            self.generatedImage = self.images.first
+            self.loading = false
+            self.step = .name
+            if self.avatarName.isEmpty { self.avatarName = "My Avatar" }
+        }
+    }
+
+    func convertPicked() {
+        images.removeAll()
+        Task { @MainActor in
+            for item in pickedItems.prefix(50) {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let img = UIImage(data: data) {
+                    images.append(img)
+                }
+            }
+        }
+    }
+
+    func removeImage(_ img: UIImage) {
+        images.removeAll { $0 == img }
+    }
+}

@@ -19,7 +19,10 @@ struct CircleButton: View {
     var size: CGFloat = 48
 
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            action()
+        }) {
             Image(systemName: system)
                 .font(.system(size: size * 0.35, weight: .semibold))
                 .foregroundStyle(.labelBlack)
@@ -33,7 +36,7 @@ struct CircleButton: View {
     private var backgroundColor: Color {
         switch style {
         case .white: return .white
-        case .gray:  return Color(.systemGray5)
+        case .gray:  return Color.grayButton
         }
     }
 
