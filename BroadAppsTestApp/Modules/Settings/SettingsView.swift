@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct SettingsView: View {
     @StateObject private var vm = SettingsViewModel()
@@ -18,9 +19,8 @@ struct SettingsView: View {
 
                         // MARK: Profile / Avatar
                         AvatarHeader(
-                            image: vm.avatarImage,
-                            name: vm.avatarName,
-                            onTap: { vm.isAvatarSheetPresented = true }
+                            avatars: vm.avatars.map { AvatarTile(id: $0.id, image: $0.image, name: $0.name) },
+                            onAddTap: { vm.isAvatarSheetPresented = true }
                         )
                         .padding(.horizontal, 16)
                         .padding(.top, 8)
@@ -134,44 +134,61 @@ struct SettingsView: View {
 }
 
 // MARK: - UI pieces
+private struct AvatarTile: Identifiable {
+    let id: UUID
+    let image: UIImage
+    let name: String
+}
 
 private struct AvatarHeader: View {
-    let image: Image?
-    let name: String
-    let onTap: () -> Void
+    let avatars: [AvatarTile]
+    let onAddTap: () -> Void
 
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
-            Button(action: onTap) {
-                ZStack {
-                    if let image {
-                        image
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 16) {
+                // плюс
+                VStack(spacing: 8) {
+                    Button(action: onAddTap) {
+                        ZStack {
+                            Circle().fill(Color.grayButton)
+                            Image(systemName: "plus")
+                                .font(.system(size: 28, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(width: 84, height: 84)
+                        .overlay(Circle().stroke(Color(.systemGray4), lineWidth: 1))
+                    }
+                    .buttonStyle(.plain)
+
+                    Text("Add an avatar")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+
+                // аватарки из VM
+                ForEach(avatars, id: \.id) { item in
+                    VStack(spacing: 8) {
+                        Image(uiImage: item.image)
                             .resizable()
                             .scaledToFill()
-                    } else {
-                        Image(systemName: "plus")
-                            .font(.system(size: 28, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .frame(width: 84, height: 84)
+                            .clipShape(Circle())
+                            .overlay(Circle().stroke(Color(.systemGray4), lineWidth: 1))
+
+                        Text(item.name)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.primary)
+                            .lineLimit(1)
+                            .frame(width: 84)
                     }
                 }
-                .frame(width: 84, height: 84)
-                .background(Color.grayButton)
-                .clipShape(Circle())
-                .overlay(Circle().stroke(Color(.systemGray4), lineWidth: 1))
             }
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Add an avatar")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                Text(name)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(.primary)
-            }
-            Spacer()
+            .padding(.horizontal, 2)
         }
     }
 }
+
 
 private struct SettingRow: View {
     enum Trailing { case chevron, none }

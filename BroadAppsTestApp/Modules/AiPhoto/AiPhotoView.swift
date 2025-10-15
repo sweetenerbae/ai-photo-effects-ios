@@ -41,9 +41,7 @@ struct AiPhotoView: View {
                         switch vm.state {
                         case .idle:
                             HStack(spacing: 8) {
-                                Image("state=images")
-                                    .font(.system(size: 32, weight: .regular))
-                                    .foregroundStyle(.gray2)
+                                Image("state=images").renderingMode(.template)                                    .foregroundStyle(.gray2)
                                 Text("Image")
                                     .appFont(.title)
                                     .foregroundStyle(.gray2)
@@ -211,7 +209,7 @@ final class KeyboardObserver: ObservableObject {
             self?.handle(note: note)
         }
         willHide = nc.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { [weak self] _ in
-            self?.height = 0
+            DispatchQueue.main.async { self?.height = 0 }
         }
     }
 
@@ -232,6 +230,8 @@ final class KeyboardObserver: ObservableObject {
 
         let kbFrameInView = window.convert(endFrame, to: nil)
         let overlap = max(0, window.bounds.maxY - kbFrameInView.minY)
-        height = overlap - window.safeAreaInsets.bottom
+        DispatchQueue.main.async { [weak self] in
+            self?.height = overlap - window.safeAreaInsets.bottom
+        }
     }
 }

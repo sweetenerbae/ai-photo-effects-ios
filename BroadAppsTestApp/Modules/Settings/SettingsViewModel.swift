@@ -6,12 +6,13 @@
 //
 
 import SwiftUI
+import UIKit
 import Combine
 import UserNotifications
 import StoreKit
 
 final class SettingsViewModel: ObservableObject {
-    // Avatar
+    @Published var avatars: [Avatar] = []
     @Published var avatarImage: Image? = nil
     @Published var avatarName: String = "Avail"
     @Published var isAvatarSheetPresented = false
@@ -24,13 +25,20 @@ final class SettingsViewModel: ObservableObject {
         var id: String { "\(self)" }
         var title: String { self == .terms ? "Terms of Use" : "Privacy Policy" }
 
-        var url: URL {
-            switch self {
-            case .terms:
-                return Bundle.main.url(forResource: "terms", withExtension: "html")!
-            case .privacy:
-                return Bundle.main.url(forResource: "privacy", withExtension: "html")!
+        var url: URL { Self.localHTML(for: self) }
+
+        private static func localHTML(for doc: Doc) -> URL {
+            let name: String
+            switch doc {
+            case .terms:   name = "terms"
+            case .privacy: name = "privacy"
             }
+            if let url = Bundle.main.url(forResource: name, withExtension: "html") {
+                return url
+            }
+            assertionFailure("Missing local HTML resource: \(name).html")
+            // Возвращаем пустой файл URL, чтобы не падать в рантайме. WebView подхватит fallback.
+            return URL(fileURLWithPath: "")
         }
 
         var localFallback: String {
@@ -41,6 +49,23 @@ final class SettingsViewModel: ObservableObject {
         }
     }
     @Published var presentingDoc: Doc?
+    @Published var docs: [Doc] = [.terms, .privacy]
+
+    // Subscriptions
+    private var bag = Set<AnyCancellable>()
+
+    init() {
+        self.avatars = AvatarLibrary.shared.avatars.map {
+            Avatar(id: $0.id, image: $0.image, name: $0.name)
+        }
+
+        AvatarLibrary.shared.$avatars
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] items in
+                self?.avatars = items.map { Avatar(id: $0.id, image: $0.image, name: $0.name) }
+            }
+            .store(in: &bag)
+    }
 
     // Alerts
     struct SimpleAlert: Identifiable {

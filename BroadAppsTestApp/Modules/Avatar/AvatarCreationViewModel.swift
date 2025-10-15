@@ -10,7 +10,7 @@ import PhotosUI
 import Combine
 
 final class AvatarCreationViewModel: ObservableObject {
-    enum Step { case gender, photos, progress, name, preview }
+    enum Step { case gender, name, photos, progress, preview }
     enum Gender: String { case woman, man }
 
     @Published var step: Step = .gender
@@ -20,7 +20,8 @@ final class AvatarCreationViewModel: ObservableObject {
     @Published var images: [UIImage] = []
     @Published var loading: Bool = false
     @Published var error: String? = nil
-
+    @Published var shouldDismiss = false
+    
     @Published var avatarName: String = ""
     @Published var generatedImage: UIImage? = nil
 
@@ -32,15 +33,16 @@ final class AvatarCreationViewModel: ObservableObject {
     // MARK: actions
     func goNext() {
         switch step {
-        case .gender:  step = .photos
-        case .photos:  startGeneration()
-        case .progress: break
+        case .gender:
+            step = .name
         case .name:
-            if let img = generatedImage {
-                AvatarLibrary.shared.add(name: avatarName, image: img)
-                step = .preview
-            }
-        case .preview: break
+            step = .photos
+        case .photos:
+            startGeneration()
+        case .progress:
+            break
+        case .preview:
+            break
         }
     }
 
@@ -53,8 +55,7 @@ final class AvatarCreationViewModel: ObservableObject {
             // первую валидную фотку как результирующую
             self.generatedImage = self.images.first
             self.loading = false
-            self.step = .name
-            if self.avatarName.isEmpty { self.avatarName = "My Avatar" }
+            self.step = .preview
         }
     }
 
@@ -72,5 +73,29 @@ final class AvatarCreationViewModel: ObservableObject {
 
     func removeImage(_ img: UIImage) {
         images.removeAll { $0 == img }
+    }
+
+    // повторная генерация из экрана готового аватара
+    func regenerate() {
+        startGeneration()
+    }
+
+    func finish() {
+        if let img = generatedImage {
+            let name = avatarName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let finalName = name.isEmpty ? "My Avatar" : name
+
+            // сохраняем аватар в библиотеку
+            AvatarLibrary.shared.add(name: finalName, image: img)
+
+            // кидаем запись в историю (стаб-промпт для ревью)
+            HistoryStore.shared.appendFinished(
+                image: img,
+                prompt: "[Avatar \(finalName)]",
+                usedAvatar: true
+            )
+        }
+
+        shouldDismiss = true
     }
 }

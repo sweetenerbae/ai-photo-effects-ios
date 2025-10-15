@@ -21,7 +21,7 @@ struct AvatarCreationFlowView: View {
                     TopBar(title: titleFor(vm.step)) {
                         CircleButton(system: "chevron.left", action: { dismiss() }, style: .gray)
                     } trailing: { Color.clear }
-                    .padding(.top, 12)
+                    .padding(.top, 8)
                     .background(Color.white.ignoresSafeArea(edges: .top))
 
                     // Scrollable Step Content
@@ -31,10 +31,10 @@ struct AvatarCreationFlowView: View {
                                 Group {
                                     switch vm.step {
                                     case .gender:   GenderStep(vm: vm)
+                                    case .name:     NameStep(vm: vm)
                                     case .photos:   PhotosStep(vm: vm)
                                     case .progress: ProgressStep(vm: vm)
-                                    case .name:     NameStep(vm: vm)
-                                    case .preview:  PreviewStep(vm: vm)
+                                    case .preview:  ReadyAvatarStep(vm: vm)
                                     }
                                 }
                                 .padding(.horizontal, 16)
@@ -56,27 +56,32 @@ struct AvatarCreationFlowView: View {
                     }
                 }
             }
+            .onChange(of: vm.shouldDismiss) { _, should in
+                if should { dismiss() }
+            }
             .toolbar(.hidden, for: .navigationBar)
         }
     }
 
-    private func titleFor(_ step: AvatarCreationViewModel.Step) -> String {
+    func titleFor(_ step: AvatarCreationViewModel.Step) -> String {
         switch step {
-        case .gender:  return "Creating an avatar"
-        case .photos:  return "Added: \(vm.images.count)"
-        case .progress:return "Creating an avatar"
-        case .name:    return "Creating an avatar"
-        case .preview: return "Avatar preview"
+        case .gender:   return "Creating an avatar"
+        case .name:     return "Name your avatar"
+        case .photos:   return "Upload photos"
+        case .progress: return "Creating an avatar"
+        case .preview:  return "Avatar generation"
         }
     }
-    private func isContinueEnabled(_ vm: AvatarCreationViewModel) -> Bool {
+    
+    func isContinueEnabled(_ vm: AvatarCreationViewModel) -> Bool {
         switch vm.step {
         case .gender:  return vm.canContinueGender
-        case .photos:  return vm.canContinuePhotos
         case .name:    return vm.canContinueName
-        case .progress, .preview: return false
+        case .photos:  return vm.canContinuePhotos
+        default:       return false
         }
     }
+    
     private func showBottomButton(_ step: AvatarCreationViewModel.Step) -> Bool {
         step == .gender || step == .photos || step == .name
     }
@@ -174,6 +179,8 @@ private struct GenderCard: View {
 private struct PhotosStep: View {
     @ObservedObject var vm: AvatarCreationViewModel
     @State private var selection: [PhotosPickerItem] = []
+    @State private var selectedImage: UIImage? = nil
+    @State private var showFullImage = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -201,10 +208,17 @@ private struct PhotosStep: View {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 2), spacing: 8) {
                         ForEach(vm.images, id: \.self) { img in
                             ZStack(alignment: .topTrailing) {
-                                Image(uiImage: img)
-                                    .resizable().scaledToFill()
-                                    .frame(height: 167)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                                Button {
+                                    selectedImage = img
+                                    withAnimation(.easeInOut(duration: 0.2)) { showFullImage = true }
+                                } label: {
+                                    Image(uiImage: img)
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(height: 167)
+                                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                                }
+                                .buttonStyle(.plain)
 
                                 Button {
                                     vm.removeImage(img)
@@ -242,6 +256,23 @@ private struct PhotosStep: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+            }
+        }
+        .overlay {
+            if showFullImage, let img = selectedImage {
+                ZStack {
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .ignoresSafeArea()
+                        .onTapGesture { withAnimation(.easeInOut(duration: 0.2)) { showFullImage = false } }
+
+                    Image(uiImage: img)
+                        .resizable()
+                        .scaledToFit()
+                        .padding(16)
+                        .onTapGesture { withAnimation(.easeInOut(duration: 0.2)) { showFullImage = false } }
+                }
+                .transition(.opacity)
             }
         }
     }
@@ -283,30 +314,54 @@ private struct NameStep: View {
                 .background(Color.grayButton)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .focused($focused)
-
-            if let img = vm.generatedImage {
-                HStack(spacing: -20) {
-                    Image(uiImage: img).resizable().scaledToFill().frame(width: 140, height: 190).clipShape(RoundedRectangle(cornerRadius: 16))
-                    Image(uiImage: img).resizable().scaledToFill().frame(width: 120, height: 170).clipShape(RoundedRectangle(cornerRadius: 16)).rotationEffect(.degrees(8)).offset(y: 8)
-                }
-            }
         }
+        .hideKeyboardOnTap()
         .onAppear { focused = true }
     }
 }
-//preview
-private struct PreviewStep: View {
+// ready avatar
+private struct ReadyAvatarStep: View {
     @ObservedObject var vm: AvatarCreationViewModel
     var body: some View {
         VStack(spacing: 16) {
             if let img = vm.generatedImage {
                 Image(uiImage: img)
-                    .resizable().scaledToFit()
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .shadow(radius: 4)
+                    .resizable()
+                    .scaledToFit()
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            } else {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color.grayButton)
+                    .frame(height: 360)
             }
-            Text(vm.avatarName).font(.title3.bold())
-                .padding(.top, 4)
+
+            // Buttons
+            VStack(spacing: 12) {
+                // Outline secondary
+                Button(action: { vm.regenerate() }) {
+                    Text("Generate again")
+                        .appFont(.button)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                                .stroke(Color.primaryOrange, lineWidth: 2)
+                        )
+                }
+                .buttonStyle(.plain)
+
+                // Primary
+                Button(action: { vm.finish() }) {
+                    Text("To the avatar")
+                        .appFont(.button)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(Color.primaryOrange)
+                        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 }
