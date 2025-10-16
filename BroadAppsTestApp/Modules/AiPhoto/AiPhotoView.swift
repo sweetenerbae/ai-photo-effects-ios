@@ -20,6 +20,7 @@ struct AiPhotoView: View {
     @State private var addAvatarPickerItem: PhotosPickerItem?
     @State private var showCreateAvatar = false
     @State private var showAvatarAlert = false
+    @State private var showPaywall = false
     @EnvironmentObject var tabRouter: TabRouter
     @StateObject private var keyboard = KeyboardObserver()
 
@@ -142,7 +143,13 @@ struct AiPhotoView: View {
                         ActionButton(
                             title: "Generate",
                             style: .primary
-                        ) { vm.generate() }
+                        ) {
+                            if !SubscriptionManager.shared.isSubscribed {
+                                showPaywall = true
+                                return
+                            }
+                            vm.generate()
+                        }
                         .opacity(vm.isPromptValid ? 1.0 : 0.5)
                         .disabled(!vm.isPromptValid || vm.isLoading)
                     }
@@ -164,12 +171,16 @@ struct AiPhotoView: View {
             .sheet(isPresented: $showCreateAvatar) {
                 AvatarCreationFlowView()
             }
-
+            .sheet(isPresented: $showPaywall) { PaywallView() }
             //Алерт, если аватар не создан
             .alert("The avatar has not been created", isPresented: $showAvatarAlert) {
                 Button("Not now", role: .cancel) { }
                 Button("To create") {
-                    showCreateAvatar = true
+                    if !SubscriptionManager.shared.isSubscribed {
+                        showPaywall = true
+                    } else {
+                        showCreateAvatar = true
+                    }
                 }
             } message: {
                 Text("Would you like to create it now?")
