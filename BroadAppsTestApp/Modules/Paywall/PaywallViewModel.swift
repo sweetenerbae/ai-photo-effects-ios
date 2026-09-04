@@ -9,6 +9,7 @@ import SwiftUI
 import StoreKit
 import Combine
 
+@MainActor
 final class PaywallViewModel: ObservableObject {
     enum Plan: String, CaseIterable, Identifiable {
         case weekly = "sub.weekly"
@@ -17,7 +18,6 @@ final class PaywallViewModel: ObservableObject {
 
         var id: String { rawValue }
 
-        // Тексты как в макете
         var title: String {
             switch self {
             case .weekly: return "Weekly"
@@ -49,21 +49,48 @@ final class PaywallViewModel: ObservableObject {
     }
 
     @Published var selected: Plan = .monthlyDiscount
-    @Published var isPurchasing = false
+    @Published private(set) var isPurchasing = false
+    @Published var errorMessage: String?
 
-    private let subs = SubscriptionManager.shared
+    private let subscriptions: SubscriptionManager
+
+    init(subscriptions: SubscriptionManager) {
+        self.subscriptions = subscriptions
+    }
+
+    convenience init() {
+        self.init(subscriptions: .shared)
+    }
 
     func onAppear() {
-        Task { await subs.loadProducts() }
+        Task {
+            do {
+                try await subscriptions.loadProducts()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
     }
 
-    @MainActor
-    func continueTapped() async {
-        guard !isPurchasing else { return }
+    func continueTapped() async -> Bool {
+        guard !isPurchasing else { return false }
         isPurchasing = true
         defer { isPurchasing = false }
-        await subs.purchase(productID: selected.rawValue)
+        do {
+            return try await subscriptions.purchase(productID: selected.rawValue)
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
     }
 
-    var isSubscribed: Bool { subs.isSubscribed }
+    func restore() async {
+        do {
+            try await subscriptions.restore()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    var isSubscribed: Bool { subscriptions.isSubscribed }
 }

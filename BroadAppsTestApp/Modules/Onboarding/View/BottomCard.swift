@@ -34,7 +34,7 @@ struct BottomCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain) 
+        .buttonStyle(.plain)
         .padding(.horizontal, 20)
         .padding(.top, 24)
         .safeAreaPadding(.bottom)

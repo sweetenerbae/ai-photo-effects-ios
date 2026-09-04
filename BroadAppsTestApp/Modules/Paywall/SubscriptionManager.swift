@@ -1,65 +1,98 @@
-//
-//  SubscriptionManager.swift
-//  BroadAppsTestApp
-//
-//  Created by Diana Kuchaeva on 15.10.25.
-//
-
-import StoreKit
 import Combine
+import StoreKit
+
+enum SubscriptionError: LocalizedError {
+    case productUnavailable
+    case failedVerification
+
+    var errorDescription: String? {
+        switch self {
+        case .productUnavailable:
+            return "The selected subscription is currently unavailable."
+        case .failedVerification:
+            return "The App Store transaction could not be verified."
+        }
+    }
+}
 
 @MainActor
 final class SubscriptionManager: ObservableObject {
     static let shared = SubscriptionManager()
 
-    // кнопка "Continue" просто включает подписку локально.
-    var mockMode = true
+    @Published private(set) var isSubscribed = false
 
-    @Published private(set) var isSubscribed: Bool = false
-
-    //  идентификаторы продуктов  (позже в App Store Connect)
     let productIDs = ["sub.weekly", "sub.monthly", "sub.monthly.discount"]
 
+    private let isDemoMode: Bool
     private var products: [Product] = []
 
-    func loadProducts() async {
-        guard !mockMode else { return }
-        do {
-            products = try await Product.products(for: productIDs)
-        } catch {
-            // todo
-        }
+    init(isDemoMode: Bool) {
+        self.isDemoMode = isDemoMode
+    }
+
+    convenience init() {
+        self.init(isDemoMode: AppConfig.isPortfolioMode)
+    }
+
+    func loadProducts() async throws {
+        guard !isDemoMode else { return }
+        products = try await Product.products(for: productIDs)
+        try await refreshEntitlements()
     }
 
     func product(for id: String) -> Product? {
         products.first(where: { $0.id == id })
     }
 
-    func purchase(productID: String) async {
-        if mockMode {
-            // имитация успешной покупки
+    @discardableResult
+    func purchase(productID: String) async throws -> Bool {
+        if isDemoMode {
             isSubscribed = true
-            return
+            return true
         }
-        guard let product = product(for: productID) else { return }
-        do {
-            let result = try await product.purchase()
-            switch result {
-            case .success(_):
-                isSubscribed = true
-            default:
-                break
-            }
-        } catch { }
+        guard let product = product(for: productID) else {
+            throw SubscriptionError.productUnavailable
+        }
+
+        switch try await product.purchase() {
+        case .success(let result):
+            let transaction = try verified(result)
+            await transaction.finish()
+            isSubscribed = true
+            return true
+        case .pending, .userCancelled:
+            return false
+        @unknown default:
+            return false
+        }
     }
 
-    func restore() async {
-        if mockMode {
+    func restore() async throws {
+        if isDemoMode {
             isSubscribed = true
             return
         }
-        do {
-            try await AppStore.sync()
-        } catch { }
+        try await AppStore.sync()
+        try await refreshEntitlements()
+    }
+
+    private func refreshEntitlements() async throws {
+        var hasActiveSubscription = false
+        for await result in Transaction.currentEntitlements {
+            let transaction = try verified(result)
+            if productIDs.contains(transaction.productID), transaction.revocationDate == nil {
+                hasActiveSubscription = true
+            }
+        }
+        isSubscribed = hasActiveSubscription
+    }
+
+    private func verified<T>(_ result: VerificationResult<T>) throws -> T {
+        switch result {
+        case .verified(let value):
+            return value
+        case .unverified:
+            throw SubscriptionError.failedVerification
+        }
     }
 }

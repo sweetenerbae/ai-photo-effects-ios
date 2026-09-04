@@ -11,7 +11,7 @@ struct SplashView: View {
     var body: some View {
         ZStack {
             Color.white.ignoresSafeArea()
-            
+
             VStack(spacing: 16) {
                 Image("app_icon")
                     .resizable()

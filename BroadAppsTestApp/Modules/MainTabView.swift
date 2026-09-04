@@ -11,14 +11,14 @@ import UIKit
 
 struct MainTabView: View {
     @EnvironmentObject var tabRouter: TabRouter
-    
+
     init() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
         appearance.backgroundColor = .white
 
-        let dim = UIColor(named: "LabelBlack")!.withAlphaComponent(0.5)
-        let active = UIColor(named: "PrimaryOrange")!
+        let dim = (UIColor(named: "LabelBlack") ?? .darkGray).withAlphaComponent(0.5)
+        let active = UIColor(named: "PrimaryOrange") ?? .systemOrange
 
         appearance.stackedLayoutAppearance.normal.iconColor = dim
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [

@@ -26,7 +26,7 @@ struct OnboardingView: View {
            .animation(isDragging ? nil : .interactiveSpring(response: 0.5, dampingFraction: 0.85), value: vm.index)
            .gesture(DragGesture().onChanged { _ in isDragging = true }.onEnded { _ in isDragging = false })
            .ignoresSafeArea()
-            
+
             // Градиент
             VStack {
                 Spacer()
@@ -43,7 +43,7 @@ struct OnboardingView: View {
                 .ignoresSafeArea(edges: .bottom)
             }
             .allowsHitTesting(false)
-            
+
             VStack {
                 HStack {
                     if vm.index > 0 {

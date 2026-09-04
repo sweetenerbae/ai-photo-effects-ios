@@ -9,35 +9,43 @@ import SwiftUI
 
 struct CategoryGridView: View {
     let title: String
-    private let columns = [GridItem(.flexible()), GridItem(.flexible())]
+    let templates: [PhotoStyle]
+
+    private let cols = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(0..<20, id: \.self) { i in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Image("effects\((i % 3) + 1)")
-                            .resizable().scaledToFill()
-                            .frame(height: 180)
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                        Text(i % 2 == 0 ? "Leggy" : "The professional tennis Player")
-                            .font(.system(size: 12, weight: .semibold))
-                            .lineLimit(1)
+            LazyVGrid(columns: cols, spacing: 12) {
+                ForEach(templates) { tmpl in
+                    NavigationLink(
+                        value: EffectCreationRoute(
+                            templateId: tmpl.id,
+                            categoryTitle: title
+                        )
+                    ) {
+                        ZStack(alignment: .bottomLeading) {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.gray.opacity(0.15))
+                                .aspectRatio(0.7, contentMode: .fit)
+                                .overlay(AsyncThumb(urlString: tmpl.displayPreview))
+                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+
+                            LinearGradient(colors: [.clear, .black.opacity(0.55)],
+                                           startPoint: .top, endPoint: .bottom)
+                                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                .allowsHitTesting(false)
+                        }
+                        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, 16)
-                .padding(.top, 8)
             }
+            .padding(16)
         }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                CircleButton(system: "chevron.left") {
-                }
-                .disabled(true) 
-                .opacity(0)
-            }
-        }
     }
 }

@@ -12,7 +12,7 @@ struct RateUsView: View {
     let appID: String
 
     @Environment(\.openURL) private var openURL
-    
+
     var body: some View {
         VStack(spacing: 0) {
             // Top bar
@@ -29,7 +29,7 @@ struct RateUsView: View {
 
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
-                    Image("rate_heart") 
+                    Image("rate_heart")
                         .resizable()
                         .scaledToFit()
                         .frame(maxWidth: 240)

@@ -8,9 +8,12 @@
 import SwiftUI
 import Combine
 
+@MainActor
 final class AvatarLibrary: ObservableObject {
     static let shared = AvatarLibrary()
     @Published private(set) var avatars: [AiPhotoViewModel.Avatar] = []
+
+    private init() {}
 
     func add(name: String, image: UIImage) {
         avatars.append(.init(name: name, image: image))

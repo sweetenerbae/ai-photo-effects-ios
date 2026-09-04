@@ -10,12 +10,16 @@ import PhotosUI
 import Combine
 import UIKit
 
+@MainActor
 final class AiPhotoViewModel: ObservableObject {
     enum State {
         case idle
+        case generating
         case loading
         case result(UIImage)
+        case failed(String)
     }
+
     enum Aspect: CaseIterable {
         case a4x3, a3x2, a16x9, a1x1, a4x5, a2x3, a9x16
 
@@ -30,7 +34,20 @@ final class AiPhotoViewModel: ObservableObject {
             case .a9x16: return "9:16"
             }
         }
+
+        var iconName: String {
+            switch self {
+            case .a4x3: return "4-3"
+            case .a3x2: return "3-2"
+            case .a16x9: return "16-9"
+            case .a1x1: return "1-1"
+            case .a4x5: return "4-5"
+            case .a2x3: return "2-3"
+            case .a9x16: return "9-16"
+            }
+        }
     }
+
 
     struct Avatar: Identifiable, Equatable {
         let id = UUID()
@@ -55,10 +72,11 @@ final class AiPhotoViewModel: ObservableObject {
            useAvatar   = selectedAvatar != nil
        }
    }
-    
+    @Published var selectedTemplate: PhotoStyle?
+    @Published var availableTemplates: [PhotoStyle] = []
     @Published var avatarName: String? = nil
     @Published var avatarThumb: UIImage? = nil
-    
+
     // SHEETS
     enum ActiveSheet: Identifiable {
         case aspect
@@ -71,45 +89,75 @@ final class AiPhotoViewModel: ObservableObject {
     var showBack: Bool = false
     var onBack: (() -> Void)?
 
+
     var isPromptValid: Bool { prompt.trimmingCharacters(in: .whitespacesAndNewlines).count >= 5 }
-    
+
     var isLoading: Bool {
         if case .loading = state { return true }
         return false
     }
-    
+
     private let service: ImageGenService
     private let history: HistoryStore
+    private var generationTask: Task<Void, Never>?
 
     init(service: ImageGenService, history: HistoryStore) {
         self.service = service
         self.history = history
+        self.avatars = AvatarLibrary.shared.avatars
     }
 
     // MARK: - Actions
 
     func generate() {
         guard isPromptValid else { return }
-        if case .loading = state { return }
+        guard !isBusy else { return }
 
-        state = .loading
+        state = .generating
+        let submittedPrompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+        let submittedAvatar = useAvatar ? avatarThumb : nil
+        let submittedAspect = aspect
+        let submittedTemplate = selectedTemplate
+        let generationId = UUID().uuidString
+        history.appendGeneratingItem(
+            prompt: submittedPrompt,
+            usedAvatar: useAvatar,
+            templateName: submittedTemplate?.title,
+            templatePreview: submittedTemplate?.preview,
+            generationId: generationId
+        )
 
-        Task { @MainActor in
+        generationTask = Task { [weak self] in
+            guard let self else { return }
             do {
                 let result = try await service.generate(
-                    prompt: prompt,
-                    avatar: useAvatar ? avatarThumb : nil,
-                    aspect: aspect
+                    prompt: submittedPrompt,
+                    avatar: submittedAvatar,
+                    aspect: submittedAspect,
+                    template: submittedTemplate
+                )
+                guard !Task.isCancelled else { return }
+                history.updateItemStatus(
+                    generationId: generationId,
+                    status: .finished,
+                    resultImage: result
                 )
                 state = .result(result)
-                history.appendFinished(image: result, prompt: prompt, usedAvatar: useAvatar)
-            } catch {
+                prompt = ""
+            } catch is CancellationError {
+                history.updateItemStatus(generationId: generationId, status: .error)
                 state = .idle
+            } catch {
+                history.updateItemStatus(generationId: generationId, status: .error)
+                state = .failed(error.localizedDescription)
             }
         }
     }
 
-    func clearResult() { state = .idle }
+    func clearResult() {
+        generationTask?.cancel()
+        state = .idle
+    }
 
     func pickAvatar() {
         if let img = UIImage(named: "ob_face_center") {
@@ -136,7 +184,7 @@ final class AiPhotoViewModel: ObservableObject {
         let avc = UIActivityViewController(activityItems: [img], applicationActivities: nil)
         UIApplication.shared.firstKeyWindow?.rootViewController?.present(avc, animated: true)
     }
-    
+
     func didPickBasePhoto(_ item: PhotosPickerItem?) {
         guard let item else { return }
         Task { @MainActor in
@@ -167,6 +215,15 @@ final class AiPhotoViewModel: ObservableObject {
               let idx = avatars.firstIndex(of: sel) else { return }
         avatars.remove(at: idx)
         selectedAvatar = nil
+    }
+
+    private var isBusy: Bool {
+        switch state {
+        case .generating, .loading:
+            return true
+        case .idle, .result, .failed:
+            return false
+        }
     }
 
 }

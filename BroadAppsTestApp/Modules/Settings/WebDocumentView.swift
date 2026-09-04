@@ -13,9 +13,18 @@ struct WebDocumentView: View {
 
     var body: some View {
         NavigationStack {
-            WebView(url: doc.url, localFallbackFilename: doc.localFallback)
-                .navigationTitle(doc.title)
-                .navigationBarTitleDisplayMode(.inline)
+            Group {
+                if let url = doc.url {
+                    WebView(url: url, localFallbackFilename: doc.localFallback)
+                } else {
+                    ContentUnavailableView(
+                        "Document Unavailable",
+                        systemImage: "doc.text.magnifyingglass"
+                    )
+                }
+            }
+            .navigationTitle(doc.title)
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

@@ -20,7 +20,10 @@ struct AspectCurtainContent: View {
                     vm.activeSheet = nil
                 } label: {
                     HStack(spacing: 8) {
-                        Image(systemName: vm.aspect == aspect ? "checkmark.square.fill" : "square")
+                        Image(aspect.iconName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
                         Text(aspect.title).font(.system(size: 15, weight: .semibold))
                         Spacer()
                     }

@@ -72,7 +72,7 @@ struct AvatarCreationFlowView: View {
         case .preview:  return "Avatar generation"
         }
     }
-    
+
     func isContinueEnabled(_ vm: AvatarCreationViewModel) -> Bool {
         switch vm.step {
         case .gender:  return vm.canContinueGender
@@ -81,7 +81,7 @@ struct AvatarCreationFlowView: View {
         default:       return false
         }
     }
-    
+
     private func showBottomButton(_ step: AvatarCreationViewModel.Step) -> Bool {
         step == .gender || step == .photos || step == .name
     }
@@ -101,7 +101,7 @@ private struct GenderStep: View {
                 .appFont(.body)
                 .opacity(0.7)
                 .multilineTextAlignment(.center)
-            
+
             Spacer(minLength: 0)
 
             HStack(spacing: 8) {
@@ -281,19 +281,66 @@ private struct PhotosStep: View {
 //progress
 private struct ProgressStep: View {
     @ObservedObject var vm: AvatarCreationViewModel
+
     var body: some View {
-        VStack(spacing: 12) {
-            ProgressView().progressViewStyle(.circular)
-            Text("Creating your avatar... This may take a few minutes.")
-                .font(.footnote).multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-            Text("The image has been generated. Please wait for the process to complete or check it later in the settings...")
-                .font(.footnote).multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+        VStack(spacing: 20) {
+            ProgressView()
+                .progressViewStyle(.circular)
+                .scaleEffect(1.2)
+
+            VStack(spacing: 8) {
+                Text(statusTitle)
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                Text(statusDescription)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+            }
+
+            if let error = vm.error {
+                Text(error)
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+                    .padding()
+                    .background(Color.red.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
         }
         .frame(maxWidth: .infinity, minHeight: 260)
         .background(Color.grayButton)
         .clipShape(RoundedRectangle(cornerRadius: 20))
+    }
+
+    private var statusTitle: String {
+        guard let status = vm.generationStatus else {
+            return "Starting avatar creation..."
+        }
+
+        switch status {
+        case "queued": return "In queue..."
+        case "started": return "Creating your avatar..."
+        case "finished": return "Almost ready!"
+        case "error": return "Generation failed"
+        default: return "Processing..."
+        }
+    }
+
+    private var statusDescription: String {
+        guard let status = vm.generationStatus else {
+            return "Preparing your photos for processing"
+        }
+
+        switch status {
+        case "queued": return "Your avatar is in the generation queue. This usually takes a few minutes."
+        case "started": return "AI is processing your photos and creating the avatar. Please wait..."
+        case "finished": return "Avatar created successfully! Preparing preview..."
+        case "error": return "There was an error during generation."
+        default: return "Processing your request..."
+        }
     }
 }
 

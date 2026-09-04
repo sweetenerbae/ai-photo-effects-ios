@@ -16,17 +16,40 @@ struct ActionButton: View {
     let title: String
     let style: Style
     let action: () -> Void
+    let iconName: String?
+
+    init(title: String, style: Style, action: @escaping () -> Void) {
+        self.title = title
+        self.style = style
+        self.action = action
+        self.iconName = nil
+    }
+
+    init(title: String, style: Style, iconName: String?, action: @escaping () -> Void) {
+        self.title = title
+        self.style = style
+        self.action = action
+        self.iconName = iconName
+    }
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .appFont(.body)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 13)
-                .background(backgroundColor)
-                .foregroundStyle(foregroundColor)
-                .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .contentShape(Rectangle())
+            HStack(spacing: 8) {
+                if let iconName = iconName {
+                    Image(iconName)
+                        .resizable()
+                        .frame(width: 24, height: 24)
+                }
+
+                Text(title)
+                    .appFont(.body)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 13)
+            .background(backgroundColor)
+            .foregroundStyle(foregroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -42,20 +65,6 @@ struct ActionButton: View {
         switch style {
         case .primary:   return .white
         case .secondary: return .primary
-        }
-    }
-
-    private var shadowColor: Color {
-        switch style {
-        case .primary:   return .clear
-        case .secondary: return .clear
-        }
-    }
-
-    private var shadowRadius: CGFloat {
-        switch style {
-        case .primary:   return 0
-        case .secondary: return 0
         }
     }
 }

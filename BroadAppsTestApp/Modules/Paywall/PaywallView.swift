@@ -10,6 +10,7 @@ import SwiftUI
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var vm = PaywallViewModel()
+    @State private var presentedDocument: SettingsViewModel.Doc?
 
     var body: some View {
         ZStack {
@@ -20,7 +21,7 @@ struct PaywallView: View {
                     Color.primaryOrange
                         .frame(height: 260)
                         .clipShape(RoundedRectangle(cornerRadius: 0))
-                        .overlay(StarsStrip(), alignment: .bottom) // можно убрать
+                        .overlay(StarsStrip(), alignment: .bottom)
                     Button {
                         dismiss()
                     } label: {
@@ -49,8 +50,9 @@ struct PaywallView: View {
 
                     Button {
                         Task {
-                            await vm.continueTapped()
-                            if vm.isSubscribed { dismiss() }
+                            if await vm.continueTapped() {
+                                dismiss()
+                            }
                         }
                     } label: {
                         Text("Continue")
@@ -79,7 +81,7 @@ struct PaywallView: View {
                         .buttonStyle(.plain)
                     Spacer()
                     Button("Recover") {
-                        Task { await SubscriptionManager.shared.restore() }
+                        Task { await vm.restore() }
                     }
                     .buttonStyle(.plain)
                     Spacer()
@@ -94,12 +96,24 @@ struct PaywallView: View {
             }
         }
         .onAppear { vm.onAppear() }
+        .sheet(item: $presentedDocument) { document in
+            WebDocumentView(doc: document)
+        }
+        .alert(
+            "Subscription Error",
+            isPresented: Binding(
+                get: { vm.errorMessage != nil },
+                set: { if !$0 { vm.errorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(vm.errorMessage ?? "Unknown error")
+        }
     }
 
     private func openLocal(_ doc: SettingsViewModel.Doc) {
-        // todo
-        // если уже есть WebDocumentView — можно открыть его хостом
-        // Тут кратко откроем в SafariView/либо пушнем ваш WebDocumentView
+        presentedDocument = doc
     }
 }
 
@@ -149,7 +163,7 @@ private struct PlanRow: View {
     }
 }
 
-// чисто декоративная полоса со «звёздами»
+// чисто декоративная полоса
 private struct StarsStrip: View {
     var body: some View {
         HStack(spacing: 12) {

@@ -11,6 +11,7 @@ import Combine
 import UserNotifications
 import StoreKit
 
+@MainActor
 final class SettingsViewModel: ObservableObject {
     @Published var avatars: [Avatar] = []
     @Published var avatarImage: Image? = nil
@@ -25,20 +26,15 @@ final class SettingsViewModel: ObservableObject {
         var id: String { "\(self)" }
         var title: String { self == .terms ? "Terms of Use" : "Privacy Policy" }
 
-        var url: URL { Self.localHTML(for: self) }
+        var url: URL? { Self.localHTML(for: self) }
 
-        private static func localHTML(for doc: Doc) -> URL {
+        private static func localHTML(for doc: Doc) -> URL? {
             let name: String
             switch doc {
             case .terms:   name = "terms"
             case .privacy: name = "privacy"
             }
-            if let url = Bundle.main.url(forResource: name, withExtension: "html") {
-                return url
-            }
-            assertionFailure("Missing local HTML resource: \(name).html")
-            // Возвращаем пустой файл URL, чтобы не падать в рантайме. WebView подхватит fallback.
-            return URL(fileURLWithPath: "")
+            return Bundle.main.url(forResource: name, withExtension: "html")
         }
 
         var localFallback: String {
@@ -82,24 +78,46 @@ final class SettingsViewModel: ObservableObject {
     // MARK: - Actions
 
     func onRestoreTapped() {
-        // Заглушка восстановления покупок: покажем алерт
-        alert = .init(title: "Restore Purchases", message: "Renew your sub — вызывает восстановление покупок.")
-        // Task { try? await AppStore.sync() } // StoreKit 2
+        Task {
+            do {
+                try await AppStore.sync()
+                alert = .init(
+                    title: "Purchases Restored",
+                    message: "Your App Store purchases have been synchronized."
+                )
+            } catch {
+                alert = .init(
+                    title: "Restore Failed",
+                    message: error.localizedDescription
+                )
+            }
+        }
     }
 
     func handleNotificationsToggle(_ on: Bool) {
-        if on {
-            UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, _ in
-                DispatchQueue.main.async {
-                    self.notificationsEnabled = granted
-                    if !granted {
-                        self.alert = .init(title: "Notifications disabled",
-                                           message: "Enable notifications in Settings to receive updates.")
-                    }
+        guard on else {
+            notificationsEnabled = false
+            return
+        }
+
+        Task {
+            do {
+                let granted = try await UNUserNotificationCenter.current()
+                    .requestAuthorization(options: [.alert, .badge, .sound])
+                notificationsEnabled = granted
+                if !granted {
+                    alert = .init(
+                        title: "Notifications Disabled",
+                        message: "Enable notifications in Settings to receive updates."
+                    )
                 }
+            } catch {
+                notificationsEnabled = false
+                alert = .init(
+                    title: "Notification Error",
+                    message: error.localizedDescription
+                )
             }
-        } else {
-            // Пользователь выключил в приложении
         }
     }
 

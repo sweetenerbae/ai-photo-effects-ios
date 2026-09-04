@@ -1,0 +1,5 @@
+BASE_URL = https://portfolio-demo.invalid
+APPHUD_API_KEY = portfolio-demo-key
+APPHUD_ID_SEED = portfolio-demo-$(PRODUCT_BUNDLE_IDENTIFIER)
+APP_DISPLAY_NAME = Portfolio Demo
+PORTFOLIO_MODE = YES
